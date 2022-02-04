@@ -60,7 +60,7 @@ def main(argv):
         image: {IMAGE_NAME}
         args: [
             '--data_dir={FLAGS.data_dir}',
-            '--fasta_paths={FLAGS.fasta_path}',
+            '--fasta_path={FLAGS.fasta_path}',
             '--msa_path={FLAGS.msa_path}',
             '--max_sto_sequences={FLAGS.max_sto_sequences}',
             '--output_dir={FLAGS.output_dir}'
