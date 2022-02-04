@@ -11,8 +11,10 @@ python3 docker/run_docker.py \
 
 
 python run-test.py \
+--project_id jk-mlops-dev \
+--staging_bucket gs://jk-vertex-staging \
 --data_dir /gcs/jk-alphafold-datasets-archive/nov-2021 \
 --fasta_path /gcs/jk-alphafold-datasets-archive/nov-2021/fasta/T1031.fasta \
 --msa_path /gcs/jk-alphafold-datasets-archive/msas/uniref90_hits.sto \
---output_dir /gcs/jk-alphafold-datasets-archive/output
+--output_dir /gcs/jk-alphafold-datasets-archive/output 
 
