@@ -1,0 +1,48 @@
+name: Test op
+inputs:
+- {name: input1, type: Dataset}
+outputs:
+- {name: output1, type: Dataset}
+- {name: output2, type: Dataset}
+implementation:
+  container:
+    image: python:3.7
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - |2+
+
+      import kfp
+      from kfp.v2 import dsl
+      from kfp.v2.dsl import *
+      from typing import *
+
+      def test_op(
+          input1: dsl.Input[dsl.Dataset],
+          output1: dsl.Output[dsl.Dataset],
+          output2: dsl.Output[dsl.Dataset]
+      ):
+          #output1.metadata['a1'] = '1'
+          #output1.metadata['a2'] = '2'
+          #output2.metadata['a3'] = '3'
+          #output2.metadata['a4'] = '4'
+          print('In component')
+
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - test_op

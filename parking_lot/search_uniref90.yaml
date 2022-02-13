@@ -1,0 +1,39 @@
+name: Search uniref90
+description: Searches the Uniref90 database.
+inputs:
+- {name: database_version, type: String}
+outputs:
+- {name: output_msa, type: alphafold.MSA}
+implementation:
+  container:
+    image: gcr.io/jk-mlops-dev/dsub
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef search_uniref90(\n    database_version: str,\n    output_msa:\
+      \ Output[MSA] \n):\n   \"\"\"Searches the Uniref90 database.\n\n   This is a\
+      \ simple prototype using dsub to submit a Cloud Life Sciences pipeline.\n  \
+      \ We are using CLS as KFP does not support attaching pre-populated disks or\
+      \ premtible VMs.\n   GCSFuse does not perform well with tools like hhsearch\
+      \ or hhblits.\n\n   For now we are ignoring the database_version parameter.\
+      \ It could be used to\n   attach  a specific prepopulated PD.\n   \"\"\" \n\
+      \   pass\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - search_uniref90

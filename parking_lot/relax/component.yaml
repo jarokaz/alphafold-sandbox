@@ -1,0 +1,77 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+name: jackhmmer_search
+description: |
+  Launch a CLS job that runs the jackhmmer search agains the specified database 
+    Args:
+        project (str):
+            Required. Project to create the custom training job in.
+        location (Optional[str]):
+            Location for creating the custom training job. If not set,
+            default to us-central1.
+        TBD
+    Returns:
+        TBD 
+inputs:
+- {name: project, type: String}
+- {name: location, type: String}
+- {name: fasta_path, type: String}
+- {name: database_path, type: String}
+- {name: dsub_logging_path, type: String}
+- {name: machine_type, type: String, default: "n1-standard-8"}
+- {name: boot_disk_size, type: Integer, default: 100}
+- {name: alpha-fold-databases-image, type: String, default: "https://www.googleapis.com/compute/v1/projects/jk-mlops-dev/global/images/alphafold-datasets-jan-2022"}
+- {name: alpha-fold-databases-disk-size, type: Integer, default: 3000}
+outputs:
+- {name: output_dir, type: String, }
+implementation:
+  container:
+    image: gcr.io/jk-mlops-dev/dsub:latest
+    command: [dsub, --provider, google-cls-v2]
+    args: [
+      --image, gcr.io/jk-mlops-dev/alphafold-inference,
+      --project, {inputValue: project},
+      --regions, {inputValue: location},
+      --machine-type, {inputValue: machine_type},
+      --boot-disk-size, {inputValue: boot_disk_size},
+      --logging, {inputValue: dsub_logging_path},
+      --mount, 
+      concat: [
+        'DB=',
+        {inputValue: alpha-fold-databases-image}, {inputValue: alpha-fold-databases-disk-size}
+      ],
+      --input, 
+      concat: [
+        'FASTA_PATH=',
+        {inputValue: fasta_path}
+      ],
+      --output-recursive, 
+      concat: [
+        'OUTPUT_PATH=',
+        {outputPath: output_dir}
+      ],
+      --command, 
+      concat: [
+        "'",
+        'python ',
+        '/scripts/jackhmmer_runner.py ',
+        '--fasta_path ${FASTA_PATH} ',
+        '--output_dir ${OUTPUT_PATH} ',
+        '--database_path ', '${DB}', {inputValue: database_path},
+        "'"
+      ],
+      --wait
+    ]

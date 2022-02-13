@@ -1,0 +1,172 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-importer": {
+        "executorLabel": "exec-importer",
+        "inputDefinitions": {
+          "parameters": {
+            "uri": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "artifact": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
+      "comp-test-op": {
+        "executorLabel": "exec-test-op",
+        "inputDefinitions": {
+          "artifacts": {
+            "input1": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "output1": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "output2": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-importer": {
+          "importer": {
+            "artifactUri": {
+              "runtimeParameter": "uri"
+            },
+            "typeSchema": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        },
+        "exec-test-op": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "test_op"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef test_op(\n    input1: dsl.Input[dsl.Dataset],\n    output1: dsl.Output[dsl.Dataset],\n    output2: dsl.Output[dsl.Dataset]\n):\n    #output1.metadata['a1'] = '1'\n    #output1.metadata['a2'] = '2'\n    #output2.metadata['a3'] = '3'\n    #output2.metadata['a4'] = '4'\n    print('In component')\n\n"
+            ],
+            "image": "python:3.7"
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "test-pipeline"
+    },
+    "root": {
+      "dag": {
+        "tasks": {
+          "importer": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-importer"
+            },
+            "inputs": {
+              "parameters": {
+                "uri": {
+                  "componentInputParameter": "fasta_path"
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "importer"
+            }
+          },
+          "test-op": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-test-op"
+            },
+            "dependentTasks": [
+              "importer"
+            ],
+            "inputs": {
+              "artifacts": {
+                "input1": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "artifact",
+                    "producerTask": "importer"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "test-op"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "datasets_disk_image": {
+            "type": "STRING"
+          },
+          "fasta_path": {
+            "type": "STRING"
+          },
+          "project": {
+            "type": "STRING"
+          },
+          "region": {
+            "type": "STRING"
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.11"
+  },
+  "runtimeConfig": {
+    "parameters": {
+      "datasets_disk_image": {
+        "stringValue": "https://www.googleapis.com/compute/v1/projects/jk-mlops-dev/global/images/jk-alphafold-datasets 3000"
+      },
+      "project": {
+        "stringValue": "jk-mlops-dev"
+      },
+      "region": {
+        "stringValue": "us-central1"
+      }
+    }
+  }
+}
